@@ -1,0 +1,12 @@
+node_modules/
+.next/
+dist/
+.env
+.env.*
+!.env.example
+config/*.private.json
+config/suppliers*.json
+!config/*.example.json
+*.log
+storage/
+.DS_Store
