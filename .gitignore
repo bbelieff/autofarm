@@ -13,3 +13,4 @@ storage/
 .pgdata/
 *.tsbuildinfo
 coverage/
+deploy/pgdata/
