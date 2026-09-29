@@ -64,8 +64,8 @@ S10 정산·재무·세무 ◀─ S9 주문·발주·송장 ◀─ S8 채널등�
 | 발주오라 계열 공급처 | 로그인 세션(내부 JSON) | 아이디·비밀번호 또는 세션 쿠키 | 토큰 갱신 후 상품·옵션 조회 |
 | 자체몰/Cafe24 계열 공급처 | 로그인 후 페이지 읽기 | 아이디·비밀번호 또는 세션 쿠키 | 옵션 추가금 파싱 |
 | 기타(오픈채팅·전화) 공급처 | 수동 입력·엑셀 업로드 | — | 가격표 엑셀 가져오기 |
-| 네이버 데이터랩 | 공식 API(키 없으면 화면 수집 폴백) | Client ID/Secret | 검색어 트렌드·쇼핑인사이트(상대값). 지금 운영은 어사이드로 화면을 보고 있음 → 무료 키 발급으로 전환 |
-| 네이버 검색광고 | 공식 API | API 키·고객 ID | 키워드 월간 검색수(절대값, 최근 30일) |
+| 네이버 데이터랩 | **NAVER Cloud API HUB**(개발자센터는 2026-07-31부터 데이터랩 신규 신청 중단) | Client ID/Secret(`X-NCP-APIGW-API-KEY-ID`·`X-NCP-APIGW-API-KEY`) | base `https://naverapihub.apigw.ntruss.com` · 검색어트렌드 `POST /search-trend/v1/search` · 쇼핑인사이트 `POST /shopping/v1/...` · 각 월 5만 회(초과 시 과금 없이 차단) · 새 키는 약 1분간 401. 2026-09-29 발급·호출 확인 |
+| 네이버 검색광고 | 공식 API | 액세스라이선스·비밀키·고객 ID | `GET https://api.searchad.naver.com/keywordstool?hintKeywords=..&showDetail=1` · 헤더 X-Timestamp·X-API-KEY·X-Customer·X-Signature(=base64 HMAC-SHA256(secret, "{ts}.GET./keywordstool")) · 비즈머니 0원이어도 동작 · 월간 검색수 절대값(PC·모바일) + 연관 키워드. 2026-09-29 발급·호출 확인 |
 | 아이템스카우트(무료 계정) | 로그인 세션 + **파이썬/Node HTTP 호출** | 로그인 토큰(카카오 로그인 1회는 브라우저·어사이드) | 사이트가 내부 JSON API(`api.itemscout.io/api/...`)로 데이터를 받음(09-29 확인) → 로그인만 브라우저로 하고 수집은 브라우저 없이. 키워드 상세는 로그인 필요 |
 | 쿠팡 WING | 공식 Open API | Access/Secret Key·업체 ID | 상품·주문·송장·정산 |
 | 당근 비즈프로필 | 어사이드 | (서버 저장 없음) | 어사이드 지시서 패키지 |
