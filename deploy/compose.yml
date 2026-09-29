@@ -1,0 +1,53 @@
+# 오토농장 운영(prod) — 기존 VPS에서 다른 서비스와 분리해 돈다.
+# 위치: /opt/autofarm/prod · 이미지: 레포 루트 Dockerfile · 설정: 같은 폴더 .env (커밋 금지)
+name: autofarm-prod
+
+services:
+  db:
+    image: postgres:18-alpine
+    container_name: autofarm-prod-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: autofarm
+      POSTGRES_DB: autofarm
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD 필요}
+    volumes:
+      - ./pgdata:/var/lib/postgresql
+    mem_limit: 256m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U autofarm"]
+      interval: 10s
+      retries: 10
+
+  migrate:
+    image: autofarm:prod
+    build: { context: .., dockerfile: Dockerfile }
+    env_file: .env
+    command: ["pnpm", "db:migrate"]
+    depends_on: { db: { condition: service_healthy } }
+    mem_limit: 384m
+    restart: "no"
+
+  web:
+    image: autofarm:prod
+    container_name: autofarm-prod-web
+    restart: unless-stopped
+    env_file: .env
+    environment: { NODE_ENV: production }
+    ports:
+      - "127.0.0.1:3320:3320"
+    depends_on:
+      db: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+    mem_limit: 512m
+
+  worker:
+    image: autofarm:prod
+    container_name: autofarm-prod-worker
+    restart: unless-stopped
+    env_file: .env
+    command: ["pnpm", "--filter", "@autofarm/worker", "start"]
+    depends_on:
+      db: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+    mem_limit: 512m

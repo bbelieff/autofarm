@@ -1,0 +1,10 @@
+**/node_modules
+**/.next
+.git
+.pgdata
+storage
+.env
+.env.*
+config/*.private.json
+config/suppliers*.json
+coverage

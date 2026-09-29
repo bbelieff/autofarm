@@ -1,0 +1,3 @@
+# 오탐: AI 테스트의 프롬프트 표식 문자열(키 아님) — 이후 커밋에서 이름 변경함
+8b202e10e56479fc2f622119e50409445ee15651:packages/ai/test/models-usage.test.ts:generic-api-key:109
+8b202e10e56479fc2f622119e50409445ee15651:packages/ai/test/models-usage.test.ts:generic-api-key:144
