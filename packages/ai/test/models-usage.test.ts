@@ -106,7 +106,7 @@ describe("codex subscription listModels (cache)", () => {
 describe("onUsage", () => {
   it("called once on success without prompt/response text", async () => {
     const records: UsageRecord[] = [];
-    const secretPrompt = "SECRET-PROMPT-abc123";
+    const promptMarker = "PROMPT-MARKER-one";
     const p = createProvider(
       { provider: "claude", mode: "subscription" },
       {
@@ -124,7 +124,7 @@ describe("onUsage", () => {
     );
     const r = await p.generate({
       model: "claude-haiku-4-5-20251001",
-      prompt: secretPrompt,
+      prompt: promptMarker,
       purpose: "text.fast",
     });
     expect(r.elapsedMs).toBe(0);
@@ -134,14 +134,14 @@ describe("onUsage", () => {
     expect(rec?.purpose).toBe("text.fast");
     expect(rec?.at).toBeInstanceOf(Date);
     const blob = JSON.stringify(rec);
-    expect(blob).not.toContain(secretPrompt);
+    expect(blob).not.toContain(promptMarker);
     expect(blob).not.toContain("RESPONSE-xyz789");
     expect(rec).not.toHaveProperty("text");
   });
 
   it("called once on failure with errorKind, never prompt text", async () => {
     const records: UsageRecord[] = [];
-    const secretPrompt = "SECRET-PROMPT-fail999";
+    const promptMarker = "PROMPT-MARKER-two";
     const p = createProvider(
       { provider: "codex", mode: "subscription" },
       {
@@ -150,13 +150,13 @@ describe("onUsage", () => {
       },
     );
     await expect(
-      p.generate({ model: "gpt-6-sol", prompt: secretPrompt }),
+      p.generate({ model: "gpt-6-sol", prompt: promptMarker }),
     ).rejects.toMatchObject({ kind: "cli_failed" });
     expect(records).toHaveLength(1);
     expect(records[0]?.ok).toBe(false);
     expect(records[0]?.errorKind).toBe("cli_failed");
     expect(records[0]?.usage).toBeNull();
-    expect(JSON.stringify(records[0])).not.toContain(secretPrompt);
+    expect(JSON.stringify(records[0])).not.toContain(promptMarker);
   });
 });
 
