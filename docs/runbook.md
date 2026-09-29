@@ -48,7 +48,9 @@ docker compose run --rm -e NEW_USER_PASSWORD='<임시 비밀번호>' migrate \
 
 ## 6. 백업·복구
 
-- 매일 `docker exec autofarm-prod-db pg_dump -U autofarm autofarm | gzip` → 암호화 → VPS 밖 복사(#62에서 자동화).
+- 매일 03:30(KST) `/etc/cron.d/autofarm-backup` → `deploy/backup.sh`: `pg_dump | gzip | openssl AES-256`(암호 = `deploy/.env` 의 `BACKUP_PASSPHRASE`) → `/opt/autofarm/backups/` 7일 보관, 기록 `backup.log`.
+- 복원: `openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass pass:<암호> -in <파일> | gunzip | docker exec -i autofarm-prod-db psql -U autofarm autofarm`
+- `.env`(마스터 키·백업 암호) 사본은 운영자 PC 비공개 폴더에 있다. VPS 밖으로 백업 파일을 옮기는 자동화는 #62.
 - 복구 훈련: 분기 1회 로컬에서 덤프를 복원해 로그인·연결 목록 확인.
 
 ## 7. 멈춤·되돌리기

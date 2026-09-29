@@ -5,7 +5,7 @@
 
 - 설계서: [docs/design.md](docs/design.md) · AI 프로바이더: [docs/ai-providers.md](docs/ai-providers.md) · 운영: [docs/runbook.md](docs/runbook.md)
 - 진행 관리: [Issues](../../issues) · [Milestones](../../milestones) (P0 기반 → P1 소싱 MVP → P2 소재·상세 → P3 등록·발주 → P4 재무·세무 → P5 체험판)
-- 상태: **P0 기반 개발 중**
+- 상태: **P0 기반 완료(2026-09-29)** · 운영 테스트 주소는 tailnet 전용 · 다음: P1 소싱 MVP
 
 ## 구조
 
