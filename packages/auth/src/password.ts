@@ -11,9 +11,11 @@ function scryptAsync(pw: string, salt: Buffer): Promise<Buffer> {
   );
 }
 
+export const MIN_PASSWORD_LENGTH = 4;
+
 /** 형식: scrypt$N$r$p$salt(b64)$hash(b64) */
 export async function hashPassword(password: string): Promise<string> {
-  if (password.length < 10) throw new Error("비밀번호는 10자 이상이어야 합니다");
+  if (password.length < MIN_PASSWORD_LENGTH) throw new Error(`비밀번호는 ${MIN_PASSWORD_LENGTH}자 이상이어야 합니다`);
   const salt = randomBytes(16);
   const key = await scryptAsync(password, salt);
   return ["scrypt", N, r, p, salt.toString("base64"), key.toString("base64")].join("$");

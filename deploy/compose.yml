@@ -36,6 +36,9 @@ services:
     environment: { NODE_ENV: production }
     ports:
       - "127.0.0.1:3320:3320"
+    volumes:
+      # 교안 기준 프리셋(비공개, 레포에 없음) — 서버에 파일을 먼저 둔다(runbook §3)
+      - ../config/presets.private.json:/app/config/presets.private.json:ro
     depends_on:
       db: { condition: service_healthy }
       migrate: { condition: service_completed_successfully }
@@ -47,6 +50,8 @@ services:
     restart: unless-stopped
     env_file: .env
     command: ["pnpm", "--filter", "@autofarm/worker", "start"]
+    volumes:
+      - ../config/presets.private.json:/app/config/presets.private.json:ro
     depends_on:
       db: { condition: service_healthy }
       migrate: { condition: service_completed_successfully }

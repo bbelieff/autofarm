@@ -48,6 +48,10 @@ export function connectionsRepo(db: Db, workspaceId: string) {
       if (row) await db.insert(auditLog).values({ workspaceId, userId: userId ?? null, action: "connection.secret", target: id });
       return row ?? null;
     },
+    async updateConfig(id: string, config: Record<string, unknown>) {
+      const [row] = await db.update(connections).set({ config, updatedAt: new Date() }).where(own(id)).returning();
+      return row ?? null;
+    },
     async setStatus(id: string, status: ConnectionStatus, message: string | null) {
       const [row] = await db
         .update(connections)

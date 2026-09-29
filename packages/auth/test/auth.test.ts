@@ -11,7 +11,8 @@ describe("비밀번호", () => {
     expect(await verifyPassword("wrong password!!", h)).toBe(false);
   });
   it("짧은 비밀번호 거부", async () => {
-    await expect(hashPassword("short")).rejects.toThrow();
+    await expect(hashPassword("abc")).rejects.toThrow();
+    await expect(hashPassword("abcd")).resolves.toMatch(/^scrypt\$/);
   });
 });
 

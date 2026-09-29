@@ -8,7 +8,7 @@ try {
 }
 
 const config: NextConfig = {
-  transpilePackages: ["@autofarm/ai", "@autofarm/auth", "@autofarm/db", "@autofarm/jobs", "@autofarm/vault"],
+  transpilePackages: ["@autofarm/ai", "@autofarm/auth", "@autofarm/config", "@autofarm/db", "@autofarm/jobs", "@autofarm/vault"],
   serverExternalPackages: ["postgres", "pg-boss", "pg", "embedded-postgres"],
   poweredByHeader: false,
 };

@@ -1,14 +1,23 @@
-/** 워크스페이스 파라미터 — 설계서 §6-3. 발굴 프리셋 실제 값은 비공개 파일에서 시드된다. */
-export type WorkspaceParams = {
-  entryPercent: number;
-  leadDays: number;
-  feeDaangn: number;
-  feeCoupang: number;
-  couponCoupang: number;
-};
-export const DEFAULT_PARAMS: WorkspaceParams = { entryPercent: 25, leadDays: 5, feeDaangn: 0.033, feeCoupang: 0.12, couponCoupang: 10000 };
+import "server-only";
+import path from "node:path";
+import { effectiveParams, loadPresets, paramsFromPresets, type SourcingParams } from "@autofarm/config";
 
-export function readParams(settings: Record<string, unknown>): WorkspaceParams {
-  const p = (settings.params ?? {}) as Partial<WorkspaceParams>;
-  return { ...DEFAULT_PARAMS, ...p };
+/** 프리셋 위치: CONFIG_DIR 또는 레포 루트 config/ (웹은 apps/web 에서 실행됨) */
+function configDir() {
+  return process.env.CONFIG_DIR ?? path.resolve(process.cwd(), "../../config");
+}
+
+let cached: { defaults: SourcingParams; source: "private" | "example" } | null = null;
+
+/** 교안 기준(비공개 프리셋) 기본값. 파일이 없으면 공개 예시 값. */
+export function defaultParams() {
+  if (!cached) {
+    const { presets, source } = loadPresets(configDir());
+    cached = { defaults: paramsFromPresets(presets), source };
+  }
+  return cached;
+}
+
+export function readParams(settings: Record<string, unknown>): SourcingParams {
+  return effectiveParams(defaultParams().defaults, (settings.params ?? {}) as Record<string, unknown>);
 }

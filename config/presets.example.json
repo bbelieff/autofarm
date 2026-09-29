@@ -1,9 +1,42 @@
 {
   "_comment": "예시 값입니다. 실제 발굴 프리셋은 config/presets.private.json (커밋 금지)에 둡니다.",
-  "timing": { "entryPercent": 25, "leadDays": 5, "lateEntryRange": [30, 40], "spikeMaxDays": 3 },
-  "channels": {
-    "daangn": { "feeRate": 0.033, "minPeakSearch": 0 },
-    "coupang": { "feeRate": 0.12, "couponAmount": 10000, "minPeakSearch": 0, "maxRocket": 0 }
+  "timing": {
+    "entryPercent": 25,
+    "leadDays": 5,
+    "lateEntryRange": [
+      30,
+      40
+    ],
+    "spikeMaxDays": 3
   },
-  "discovery": { "minSearch": 0, "shoppingOnly": true, "excludeMajorBrands": true, "sortBy": "productCountAsc" }
+  "channels": {
+    "daangn": {
+      "feeRate": 0.033,
+      "minPeakSearch": 0
+    },
+    "coupang": {
+      "feeRate": 0.12,
+      "couponAmount": 10000,
+      "minPeakSearch": 0,
+      "maxRocket": 0
+    }
+  },
+  "discovery": {
+    "minSearch": 0,
+    "shoppingOnly": true,
+    "excludeMajorBrands": true,
+    "sortBy": "productCountAsc"
+  },
+  "pricing": {
+    "marginDaangnPct": 30,
+    "marginCoupangPct": 20,
+    "decoyRoundDown": true,
+    "priceEnding": 900
+  },
+  "validation": {
+    "seasonRepeatYears": 2,
+    "crossCheckTolerancePct": 30,
+    "excludeSoftProduce": true,
+    "excludeForecast": true
+  }
 }

@@ -28,7 +28,7 @@ pnpm install
 node scripts/make-local-env.mjs          # .env 생성(무작위 테스트 키, 커밋 안 됨)
 pnpm db:start                            # 터미널 1: 로컬 Postgres(127.0.0.1:54329)
 pnpm db:migrate
-NEW_USER_PASSWORD=<10자 이상> pnpm --filter @autofarm/db user:add --email you@example.com --name 이름 --workspace 내농장 --admin
+NEW_USER_PASSWORD=<4자 이상> pnpm --filter @autofarm/db user:add --email you@example.com --name 이름 --workspace 내농장 --admin
 pnpm dev:worker                          # 터미널 2
 pnpm dev                                 # 터미널 3: http://localhost:3310
 ```
