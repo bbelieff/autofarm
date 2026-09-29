@@ -52,7 +52,9 @@ services:
     command: ["pnpm", "--filter", "@autofarm/worker", "start"]
     volumes:
       - ../config/presets.private.json:/app/config/presets.private.json:ro
+      # AI 구독 로그인 폴더(워크스페이스별) — 호스트 폴더 소유자 uid 1000, 권한 700
+      - ./ai-home:/data/ai
     depends_on:
       db: { condition: service_healthy }
       migrate: { condition: service_completed_successfully }
-    mem_limit: 512m
+    mem_limit: 768m

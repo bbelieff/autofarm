@@ -14,3 +14,4 @@ storage/
 *.tsbuildinfo
 coverage/
 deploy/pgdata/
+deploy/ai-home/

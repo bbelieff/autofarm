@@ -358,3 +358,11 @@ describe("non-zero exit", () => {
     }
   });
 });
+
+describe("claude 실패 이유", () => {
+  it("stdout JSON 의 401 을 인증 실패로", async () => {
+    const run = fakeRunCli({ code: 1, stdout: JSON.stringify({ is_error: true, result: "Failed to authenticate. API Error: 401 OAuth access token is invalid.", api_error_status: 401 }), stderr: "" });
+    const p = createProvider({ provider: "claude", mode: "subscription" }, { runCli: run });
+    await expect(p.generate({ model: "haiku", prompt: "x" })).rejects.toMatchObject({ kind: "auth" });
+  });
+});

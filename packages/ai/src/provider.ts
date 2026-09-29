@@ -232,6 +232,18 @@ export function createProvider(cfg: ProviderConfig, deps?: Deps): AiProvider {
         timeoutP,
       ]);
       if (res.code !== 0) {
+        // Claude 는 실패해도 stdout JSON 에 이유(result)와 API 상태 코드를 담는다
+        if (provider === "claude") {
+          try {
+            const j = JSON.parse(res.stdout) as { result?: unknown; api_error_status?: unknown };
+            if (typeof j.result === "string" && j.result) {
+              const status = typeof j.api_error_status === "number" ? j.api_error_status : undefined;
+              throw new AiError(j.result.slice(0, 300), status === 401 || status === 403 ? "auth" : status === 429 ? "rate_limited" : "cli_failed", status);
+            }
+          } catch (e) {
+            if (e instanceof AiError) throw e;
+          }
+        }
         throw new AiError(
           `${provider} cli failed (exit ${res.code}): ${stderrTail(res.stderr)}`,
           "cli_failed",

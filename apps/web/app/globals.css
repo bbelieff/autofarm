@@ -49,3 +49,10 @@ details summary { cursor: pointer; }
   .shell { grid-template-columns: 1fr; }
   main { padding: 18px 16px; }
 }
+.ai-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; margin-top: 10px; }
+.ai-card { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; background: #fcfcfa; }
+.ai-card h4 { margin: 0 0 8px; font-size: 15px; }
+.ai-row { border-top: 1px dashed var(--line); padding: 8px 0; }
+.ai-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 4px; }
+.ai-head a { font-size: 13px; margin-left: auto; }
+code { background: #f1efe8; padding: 1px 5px; border-radius: 4px; }

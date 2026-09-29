@@ -1,9 +1,10 @@
 import { and, desc, eq, gte, sql } from "drizzle-orm";
-import { STATIC_MODELS, type ProviderId } from "@autofarm/ai";
+import { PROVIDER_LINKS, STATIC_MODELS, SUBSCRIPTION_METHOD, type ProviderId } from "@autofarm/ai";
 import { connectionsRepo, getAiSettings, listAllWorkspaces, schema } from "@autofarm/db";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/session";
-import { checkAiKey, deleteAiKey, saveAi, saveAiKey, testAi } from "./actions";
+import { checkAiKey, deleteAiKey, disconnectSubscription, saveAi, saveAiKey, testAi, verifySubscription } from "./actions";
+import { ClaudeTokenForm, DeviceConnect } from "./connect";
 
 const PROVIDERS: { id: ProviderId; name: string }[] = [
   { id: "claude", name: "Claude" },
@@ -16,6 +17,12 @@ const PURPOSES = [
   { key: "text.quality", label: "품질 텍스트 (카피)" },
   { key: "image", label: "이미지 (P2)" },
 ];
+const STATUS_KO: Record<string, string> = { ok: "연결됨", expired: "인증 실패", error: "오류", unset: "확인 중", blocked: "차단" };
+function StatusBadge({ c }: { c?: { status: string } }) {
+  if (!c) return <span className="badge">미연결</span>;
+  return <span className={`badge ${c.status}`}>{STATUS_KO[c.status] ?? c.status}</span>;
+}
+
 const EFFORTS = ["", "none", "minimal", "low", "medium", "high", "xhigh", "max", "ultra"];
 
 export default async function AdminAiPage() {
@@ -46,7 +53,7 @@ export default async function AdminAiPage() {
         .where(and(eq(schema.jobRuns.workspaceId, w.id), eq(schema.jobRuns.type, "ai.test")))
         .orderBy(desc(schema.jobRuns.createdAt))
         .limit(1);
-      const keys = (await connectionsRepo(d, w.id).list()).filter((c) => c.kind.startsWith("ai:"));
+      const keys = (await connectionsRepo(d, w.id).list()).filter((c) => c.kind.startsWith("ai:") || c.kind.startsWith("ai-sub:"));
       return { w, settings, usage, lastTest, keys };
     }),
   );
@@ -72,46 +79,73 @@ export default async function AdminAiPage() {
             )}
           </datalist>
           <details open style={{ marginBottom: 14 }}>
-            <summary><b>API 키 연결</b> <span className="muted">— 인증 방식을 「API 키」로 쓸 때 필요합니다. 저장하면 바로 모델 목록으로 확인합니다.</span></summary>
-            <table style={{ marginTop: 8 }}>
-              <thead><tr><th>프로바이더</th><th>상태</th><th>키</th><th>모델</th><th>연결·교체</th><th /></tr></thead>
-              <tbody>
-                {PROVIDERS.map((p) => {
-                  const k = keys.find((c) => c.kind === `ai:${p.id}`);
-                  const models = k && Array.isArray(k.config.models) ? (k.config.models as string[]).length : 0;
-                  return (
-                    <tr key={p.id}>
-                      <td>{p.name}</td>
-                      <td>
-                        {k ? <span className={`badge ${k.status}`}>{k.status === "ok" ? "정상" : k.status === "expired" ? "인증 실패" : k.status === "unset" ? "미확인" : "오류"}</span> : <span className="muted">없음</span>}
-                        {k?.statusMessage && <div className="muted">{k.statusMessage}</div>}
-                      </td>
-                      <td className="muted">{k?.secretHint ?? "-"}</td>
-                      <td className="muted">{models ? `${models}개` : "-"}</td>
-                      <td>
-                        <form action={saveAiKey} style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                          <input type="hidden" name="workspaceId" value={w.id} />
-                          <input type="hidden" name="provider" value={p.id} />
-                          <input name="api_key" type="password" autoComplete="off" placeholder={k ? "새 키로 교체" : "API 키"} required style={{ minWidth: 160, flex: 1 }} aria-label={`${p.name} API 키`} />
-                          {p.id === "muse" && (
-                            <input name="base_url" placeholder="API 주소" defaultValue={typeof k?.config.base_url === "string" ? k.config.base_url : ""} required style={{ minWidth: 160, flex: 1 }} aria-label="Muse API 주소" />
-                          )}
-                          <button>저장</button>
-                        </form>
-                      </td>
-                      <td>
-                        {k && (
-                          <div className="actions" style={{ marginTop: 0 }}>
-                            <form action={checkAiKey}><input type="hidden" name="workspaceId" value={w.id} /><input type="hidden" name="provider" value={p.id} /><button className="ghost">확인</button></form>
-                            <form action={deleteAiKey}><input type="hidden" name="workspaceId" value={w.id} /><input type="hidden" name="provider" value={p.id} /><button className="danger">삭제</button></form>
-                          </div>
+            <summary>
+              <b>AI 연결</b> <span className="muted">— 구독(내 요금제로 로그인) 또는 API 키 중 하나를 연결하고, 아래 「인증 방식」에서 고릅니다.</span>
+            </summary>
+            <div className="ai-grid">
+              {PROVIDERS.map((p) => {
+                const key = keys.find((c) => c.kind === `ai:${p.id}`);
+                const sub = keys.find((c) => c.kind === `ai-sub:${p.id}`);
+                const link = PROVIDER_LINKS[p.id];
+                const method = SUBSCRIPTION_METHOD[p.id];
+                const models = key && Array.isArray(key.config.models) ? (key.config.models as string[]).length : 0;
+                return (
+                  <div key={p.id} className="ai-card">
+                    <h4>{link.name}</h4>
+
+                    <div className="ai-row">
+                      <div className="ai-head">
+                        <b>구독</b> <StatusBadge c={sub} />
+                        {link.subscriptionUrl && (
+                          <a href={link.subscriptionUrl} target="_blank" rel="noopener noreferrer" className="muted">
+                            요금제 보기 ↗
+                          </a>
                         )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </div>
+                      {sub?.statusMessage && <div className="muted">{sub.statusMessage}</div>}
+                      {method === "device" && <DeviceConnect workspaceId={w.id} provider={p.id} connected={sub?.status === "ok"} />}
+                      {method === "token" && <ClaudeTokenForm workspaceId={w.id} connected={Boolean(sub)} />}
+                      {method === "none" && <p className="muted">구독으로는 쓸 수 없습니다(2026-06-18 개인 로그인 종료). API 키로 연결하세요.</p>}
+                      {sub && (
+                        <div className="actions" style={{ marginTop: 6 }}>
+                          <form action={verifySubscription}><input type="hidden" name="workspaceId" value={w.id} /><input type="hidden" name="provider" value={p.id} /><button className="ghost">확인</button></form>
+                          <form action={disconnectSubscription}><input type="hidden" name="workspaceId" value={w.id} /><input type="hidden" name="provider" value={p.id} /><button className="danger">해제</button></form>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="ai-row">
+                      <div className="ai-head">
+                        <b>API 키</b> <StatusBadge c={key} />
+                        <a href={link.apiKeyUrl} target="_blank" rel="noopener noreferrer">
+                          키 발급 페이지 ↗
+                        </a>
+                      </div>
+                      <div className="muted">{link.apiKeyNote}{key?.secretHint ? ` · 저장된 키 ${key.secretHint}` : ""}{models ? ` · 모델 ${models}개` : ""}</div>
+                      {key?.statusMessage && <div className="muted">{key.statusMessage}</div>}
+                      <form action={saveAiKey} style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+                        <input type="hidden" name="workspaceId" value={w.id} />
+                        <input type="hidden" name="provider" value={p.id} />
+                        <input name="api_key" type="password" autoComplete="off" placeholder={key ? "새 키로 교체" : "API 키 붙여넣기"} required style={{ minWidth: 160, flex: 1 }} aria-label={`${p.name} API 키`} />
+                        {p.id === "muse" && (
+                          <input name="base_url" placeholder="API 주소" defaultValue={typeof key?.config.base_url === "string" ? key.config.base_url : ""} required style={{ minWidth: 160, flex: 1 }} aria-label="Muse API 주소" />
+                        )}
+                        <button>연결</button>
+                      </form>
+                      {key && (
+                        <div className="actions" style={{ marginTop: 6 }}>
+                          <form action={checkAiKey}><input type="hidden" name="workspaceId" value={w.id} /><input type="hidden" name="provider" value={p.id} /><button className="ghost">확인</button></form>
+                          <form action={deleteAiKey}><input type="hidden" name="workspaceId" value={w.id} /><input type="hidden" name="provider" value={p.id} /><button className="danger">삭제</button></form>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="muted" style={{ marginTop: 8 }}>
+              구독 연결은 그 요금제 계정 주인 본인의 워크스페이스에서만 쓰세요(각 회사 약관). 다른 사람 워크스페이스에는 그 사람 계정이나 API 키를 연결합니다.
+            </p>
           </details>
           <form action={saveAi}>
             <input type="hidden" name="workspaceId" value={w.id} />
