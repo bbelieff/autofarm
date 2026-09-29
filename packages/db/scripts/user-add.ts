@@ -1,3 +1,8 @@
+try {
+  process.loadEnvFile("../../.env");
+} catch {
+  // .env 없으면 환경변수만 사용
+}
 // 초대 방식 계정 생성(공개 가입 없음).
 // 사용: pnpm --filter @autofarm/db user:add --email a@b.c --name 이름 --workspace 워크스페이스명 [--admin] [--tax simple]
 // 비밀번호는 환경변수 NEW_USER_PASSWORD 로 넘긴다(명령 기록에 남지 않게).

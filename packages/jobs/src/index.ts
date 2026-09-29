@@ -2,12 +2,13 @@ import { and, eq, sql } from "drizzle-orm";
 import { PgBoss } from "pg-boss";
 import { schema, type Db, type JobStatus } from "@autofarm/db";
 
-export type JobType = "connection.health" | "secrets.purge" | "noop";
+export type JobType = "connection.health" | "secrets.purge" | "ai.test" | "noop";
 
 type TypeSpec = { retryLimit: number; expireInSeconds: number };
 export const JOB_SPECS: Record<JobType, TypeSpec> = {
   "connection.health": { retryLimit: 1, expireInSeconds: 120 },
   "secrets.purge": { retryLimit: 1, expireInSeconds: 120 },
+  "ai.test": { retryLimit: 0, expireInSeconds: 300 },
   noop: { retryLimit: 2, expireInSeconds: 30 },
 };
 const DEAD = "dead-letter";

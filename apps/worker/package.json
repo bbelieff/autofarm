@@ -1,0 +1,22 @@
+{
+  "name": "@autofarm/worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@autofarm/ai": "workspace:*",
+    "@autofarm/connectors": "workspace:*",
+    "@autofarm/db": "workspace:*",
+    "@autofarm/jobs": "workspace:*",
+    "@autofarm/vault": "workspace:*",
+    "drizzle-orm": "^0.45.3",
+    "tsx": "^4.23.15"
+  },
+  "devDependencies": { "@types/node": "^24.0.0", "typescript": "~6.0.3", "vitest": "^5.0.2" }
+}

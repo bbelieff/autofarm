@@ -1,3 +1,8 @@
+try {
+  process.loadEnvFile("../../.env");
+} catch {
+  // .env 없으면 환경변수만 사용
+}
 import { createDb } from "../src/client";
 import { runMigrations } from "../src/migrate";
 

@@ -14,8 +14,8 @@
     "db:start": "tsx scripts/dev-db.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
-    "db:seed": "tsx scripts/seed.ts",
-    "user:add": "tsx scripts/user-add.ts"
+    "user:add": "tsx scripts/user-add.ts",
+    "seed:suppliers": "tsx scripts/seed-suppliers.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.3",
@@ -28,6 +28,7 @@
     "tsx": "^4.23.15",
     "typescript": "~6.0.3",
     "vitest": "^5.0.2",
-    "@autofarm/auth": "workspace:*"
+    "@autofarm/auth": "workspace:*",
+    "@autofarm/config": "workspace:*"
   }
 }

@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 비공개 파일이 커밋되지 않았는지
+        run: |
+          bad=$(git ls-files | grep -E '(^|/)\.env$|\.env\.[^e]|config/.*\.private\.json$|config/suppliers.*\.json$|naver_api_keys|b2b_api_keys' || true)
+          if [ -n "$bad" ]; then echo "커밋 금지 파일: $bad"; exit 1; fi
+
+      - name: 비밀값 검사(gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test
+      - name: 웹 빌드
+        run: pnpm --filter @autofarm/web build

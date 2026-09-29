@@ -20,7 +20,7 @@ async function freePort(): Promise<number> {
 export async function startTestDb() {
   const dir = await mkdtemp(path.join(os.tmpdir(), "autofarm-pg-"));
   const port = await freePort();
-  const pg = new EmbeddedPostgres({ databaseDir: dir, user: "test", password: "test", port, persistent: false, onLog: () => {}, onError: () => {} });
+  const pg = new EmbeddedPostgres({ databaseDir: dir, user: "test", password: "test", port, persistent: true, onLog: () => {}, onError: () => {} });
   await pg.initialise();
   await pg.start();
   await pg.createDatabase("test");
@@ -33,7 +33,8 @@ export async function startTestDb() {
     async stop() {
       await close();
       await pg.stop();
-      await rm(dir, { recursive: true, force: true }).catch(() => {});
+      // Windows 는 PG 종료 직후 파일 잠금이 남아 있을 수 있어 재시도하고, 끝내 실패하면 임시 폴더로 남긴다
+      await rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 }).catch(() => {});
     },
   };
 }
