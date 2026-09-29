@@ -3,3 +3,5 @@ secret:
   # 로컬 .env 생성 스크립트: 무작위 테스트 값을 만드는 틀(실제 비밀값 없음)
   ignored_paths:
     - scripts/make-local-env.mjs
+    # 토큰 형식 검사용 가짜 값만 있는 테스트
+    - packages/ai/test/login.test.ts

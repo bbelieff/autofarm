@@ -8,6 +8,7 @@ import { createJobs } from "@autofarm/jobs";
 import { createRedactingLogger, createVault } from "@autofarm/vault";
 import { eq } from "drizzle-orm";
 import { aiTestHandler, healthHandler, purgeHandler } from "./handlers";
+import { aiLoginHandler, aiLogoutHandler, aiVerifyHandler } from "./ai-sub";
 import { HEALTH_CHECKS } from "./health";
 
 const log = createRedactingLogger(console);
@@ -23,6 +24,9 @@ await jobs.start();
 await jobs.work("connection.health", healthHandler(db, vault));
 await jobs.work("secrets.purge", purgeHandler(db));
 await jobs.work("ai.test", aiTestHandler(db, vault));
+await jobs.work("ai.login", aiLoginHandler(db));
+await jobs.work("ai.verify", aiVerifyHandler(db, vault));
+await jobs.work("ai.logout", aiLogoutHandler(db));
 
 // 매일 04:00(KST) 유지보수: 만료 비밀 파기 + 점검 가능한 연결 전부 점검
 const DAILY = "maintenance.daily";

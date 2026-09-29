@@ -41,7 +41,7 @@ describe("점검 작업", () => {
       secret: vault.encrypt(JSON.stringify({ customer_id: "1", access_license: "a", secret_key: "s" }), `${ws}|data:naver-searchad`),
       secretHint: "••••",
     });
-  const ctx = (connectionId: string) => ({ runId: "r", workspaceId: ws, input: { connectionId }, attempt: 1, progress: async () => {} });
+  const ctx = (connectionId: string) => ({ runId: "r", workspaceId: ws, input: { connectionId }, attempt: 1, progress: async () => {}, report: async () => {} });
 
   it("정상 응답이면 ok", async () => {
     const c = await make();

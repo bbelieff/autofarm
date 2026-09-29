@@ -1,6 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { AiError, createProvider, isSupported, type AuthMode, type ProviderId } from "@autofarm/ai";
+import { AiError, createProvider, isSupported, looksLikeClaudeToken, type AuthMode, type ProviderId } from "@autofarm/ai";
 import { connectionsRepo, upsertAiSettings } from "@autofarm/db";
 import { db } from "@/lib/db";
 import { jobs } from "@/lib/jobs";
@@ -114,4 +114,53 @@ async function check(workspaceId: string, provider: ProviderId) {
     const authLike = (e instanceof AiError && e.kind === "auth") || /api key not valid|invalid (x-)?api[- ]key|unauthori[sz]ed|incorrect api key/i.test(raw);
     await repo.setStatus(conn.id, authLike ? "expired" : "error", message.slice(0, 200));
   }
+}
+
+// ─── 구독 연결(공식 CLI 로그인) ─────────────────────────────────────
+
+const subKind = (p: ProviderId) => `ai-sub:${p}`;
+
+/** Codex·Muse: 서버가 기기 코드 로그인을 시작한다. 화면은 돌려받은 작업 ID로 진행을 지켜본다. */
+export async function startSubscriptionLogin(workspaceId: string, provider: ProviderId): Promise<{ runId: string } | { error: string }> {
+  await requireAdmin();
+  if (provider !== "codex" && provider !== "muse") return { error: "이 프로바이더는 자동 로그인을 지원하지 않습니다" };
+  const j = await jobs();
+  const { run } = await j.enqueue({ workspaceId, type: "ai.login", key: `ai-login:${provider}:${Date.now()}`, input: { provider } });
+  return { runId: run.id };
+}
+
+/** Claude: PC 에서 `claude setup-token` 으로 받은 토큰을 저장하고 바로 확인한다. */
+export async function saveClaudeToken(_prev: string | null, form: FormData): Promise<string | null> {
+  const { user } = await requireAdmin();
+  const workspaceId = String(form.get("workspaceId"));
+  const token = String(form.get("token") ?? "").trim();
+  if (!looksLikeClaudeToken(token)) return "토큰 형식이 아닙니다. `claude setup-token` 이 마지막에 보여준 sk-ant-oat… 로 시작하는 값을 붙여넣으세요";
+  const kind = subKind("claude");
+  const repo = connectionsRepo(db(), workspaceId);
+  const sealed = vault().encrypt(JSON.stringify({ token }), `${workspaceId}|${kind}`);
+  const existing = (await repo.list()).find((c) => c.kind === kind);
+  if (existing) await repo.updateSecret(existing.id, sealed, mask(token), user.id);
+  else await repo.create({ kind, label: "claude 구독", authType: "oauth", secret: sealed, secretHint: mask(token), config: {}, userId: user.id });
+  const j = await jobs();
+  await j.enqueue({ workspaceId, type: "ai.verify", key: `ai-verify:claude:${Date.now()}`, input: { provider: "claude" } });
+  revalidatePath("/admin/ai");
+  return "저장했습니다 — 연결을 확인하는 중입니다(몇 초 뒤 새로고침)";
+}
+
+export async function verifySubscription(form: FormData) {
+  await requireAdmin();
+  const workspaceId = String(form.get("workspaceId"));
+  const provider = readProvider(form);
+  const j = await jobs();
+  await j.enqueue({ workspaceId, type: "ai.verify", key: `ai-verify:${provider}:${Date.now()}`, input: { provider } });
+  revalidatePath("/admin/ai");
+}
+
+export async function disconnectSubscription(form: FormData) {
+  await requireAdmin();
+  const workspaceId = String(form.get("workspaceId"));
+  const provider = readProvider(form);
+  const j = await jobs();
+  await j.enqueue({ workspaceId, type: "ai.logout", key: `ai-logout:${provider}:${Date.now()}`, input: { provider } });
+  revalidatePath("/admin/ai");
 }

@@ -25,6 +25,7 @@ docker compose ps && docker compose logs --tail 30 web worker
 git clone https://github.com/bbelieff/autofarm.git /opt/autofarm/prod
 cd /opt/autofarm/prod/deploy && umask 077 && cat > .env   # 아래 키 채우기
 # 교안 기준 프리셋(비공개): 운영자 PC 의 config/presets.private.json 을 서버 /opt/autofarm/prod/config/ 에 복사(없으면 docker 가 폴더를 만들어 실패)
+mkdir -p ai-home && chown 1000:1000 ai-home && chmod 700 ai-home
 docker compose up -d --build
 tailscale serve --bg --https=8443 http://127.0.0.1:3320
 ```
@@ -45,7 +46,13 @@ docker compose run --rm -e NEW_USER_PASSWORD='<임시 비밀번호>' migrate \
 
 ## 5. AI 구독 모드(서버)
 
-구독 모드는 워커 컨테이너 안에 공식 CLI와 계정 주인 로그인이 있어야 한다. 아직 설치하지 않았다(P1 전 결정). 그 전에는 API 모드 또는 AI 꺼짐.
+- 워커 이미지에 공식 CLI가 들어 있다: Claude Code(`claude`), Codex(`codex`), Muse(`/opt/muse/muse`, 첫 실행 때 본체를 내려받음).
+- 로그인 정보는 워크스페이스·프로바이더별 폴더 `deploy/ai-home/<워크스페이스ID>/<프로바이더>/` 에 저장된다(호스트 소유자 uid 1000, 권한 700). 연결 해제 시 폴더를 지운다.
+- 연결은 화면에서: 「AI 설정 → AI 연결」
+  - Codex·Muse: 「자동 연결」 → 링크·코드 → 브라우저에서 승인 → 자동으로 연결됨(최대 15분 대기)
+  - Claude: 계정 주인 PC에서 `claude setup-token` → 토큰 붙여넣기(암호화 저장, 실행 때만 환경변수로 전달)
+  - Gemini: API 키만
+- 구독 연결은 그 요금제 계정 주인 본인의 워크스페이스에서만 쓴다.
 
 ## 6. 백업·복구
 
