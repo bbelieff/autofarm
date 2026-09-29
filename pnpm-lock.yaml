@@ -41,6 +41,9 @@ importers:
       '@autofarm/auth':
         specifier: workspace:*
         version: link:../../packages/auth
+      '@autofarm/config':
+        specifier: workspace:*
+        version: link:../../packages/config
       '@autofarm/db':
         specifier: workspace:*
         version: link:../../packages/db

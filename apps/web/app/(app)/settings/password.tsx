@@ -13,8 +13,8 @@ export function PasswordForm() {
           <input id="current" name="current" type="password" autoComplete="current-password" required />
         </div>
         <div>
-          <label htmlFor="next">새 비밀번호(10자 이상)</label>
-          <input id="next" name="next" type="password" autoComplete="new-password" minLength={10} required />
+          <label htmlFor="next">새 비밀번호(4자 이상)</label>
+          <input id="next" name="next" type="password" autoComplete="new-password" minLength={4} required />
         </div>
       </div>
       {msg && <p className={msg.startsWith("바꿨") ? "muted" : "err"}>{msg}</p>}

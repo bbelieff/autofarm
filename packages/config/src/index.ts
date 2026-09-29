@@ -24,6 +24,8 @@ export type Presets = {
     period?: string;
     altMinSearch?: number[];
   };
+  pricing?: { marginDaangnPct?: number; marginCoupangPct?: number; decoyRoundDown?: boolean; priceEnding?: 800 | 900 };
+  validation?: { seasonRepeatYears?: number; crossCheckTolerancePct?: number; excludeSoftProduce?: boolean; excludeForecast?: boolean };
 };
 
 export type SupplierSeed = {
@@ -75,3 +77,5 @@ export function loadSupplierSeeds(configDir: string): SupplierSeed[] {
     return s as unknown as SupplierSeed;
   });
 }
+
+export * from "./params";

@@ -1,9 +1,9 @@
 import { and, desc, eq, gte, sql } from "drizzle-orm";
 import { STATIC_MODELS, type ProviderId } from "@autofarm/ai";
-import { getAiSettings, listAllWorkspaces, schema } from "@autofarm/db";
+import { connectionsRepo, getAiSettings, listAllWorkspaces, schema } from "@autofarm/db";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/session";
-import { saveAi, testAi } from "./actions";
+import { checkAiKey, deleteAiKey, saveAi, saveAiKey, testAi } from "./actions";
 
 const PROVIDERS: { id: ProviderId; name: string }[] = [
   { id: "claude", name: "Claude" },
@@ -46,7 +46,8 @@ export default async function AdminAiPage() {
         .where(and(eq(schema.jobRuns.workspaceId, w.id), eq(schema.jobRuns.type, "ai.test")))
         .orderBy(desc(schema.jobRuns.createdAt))
         .limit(1);
-      return { w, settings, usage, lastTest };
+      const keys = (await connectionsRepo(d, w.id).list()).filter((c) => c.kind.startsWith("ai:"));
+      return { w, settings, usage, lastTest, keys };
     }),
   );
 
@@ -57,16 +58,61 @@ export default async function AdminAiPage() {
         워크스페이스마다 프로바이더·인증 방식·용도별 모델을 정합니다. 구독 방식은 계정 주인 본인 워크스페이스에만 씁니다. Muse Spark API는
         결제 등록(10-13 예정) 뒤에 켭니다.
       </p>
-      <datalist id="models-all">
-        {PROVIDERS.flatMap((p) =>
-          STATIC_MODELS[p.id]
-            .filter((m) => !m.hidden)
-            .map((m) => <option key={`${p.id}-${m.id}`} value={m.id}>{`${p.name} · ${m.label}`}</option>),
-        )}
-      </datalist>
-      {rows.map(({ w, settings, usage, lastTest }) => (
+      {rows.map(({ w, settings, usage, lastTest, keys }) => (
         <div className="card" key={w.id}>
           <h3>{w.name}</h3>
+          <datalist id={`models-${w.id}`}>
+            {keys.flatMap((k) =>
+              (Array.isArray(k.config.models) ? (k.config.models as string[]) : []).map((m) => (
+                <option key={`${k.kind}-${m}`} value={m}>{`${k.kind.slice(3)} API · ${m}`}</option>
+              )),
+            )}
+            {PROVIDERS.flatMap((p) =>
+              STATIC_MODELS[p.id].filter((m) => !m.hidden).map((m) => <option key={`${p.id}-${m.id}`} value={m.id}>{`${p.name} · ${m.label}`}</option>),
+            )}
+          </datalist>
+          <details open style={{ marginBottom: 14 }}>
+            <summary><b>API 키 연결</b> <span className="muted">— 인증 방식을 「API 키」로 쓸 때 필요합니다. 저장하면 바로 모델 목록으로 확인합니다.</span></summary>
+            <table style={{ marginTop: 8 }}>
+              <thead><tr><th>프로바이더</th><th>상태</th><th>키</th><th>모델</th><th>연결·교체</th><th /></tr></thead>
+              <tbody>
+                {PROVIDERS.map((p) => {
+                  const k = keys.find((c) => c.kind === `ai:${p.id}`);
+                  const models = k && Array.isArray(k.config.models) ? (k.config.models as string[]).length : 0;
+                  return (
+                    <tr key={p.id}>
+                      <td>{p.name}</td>
+                      <td>
+                        {k ? <span className={`badge ${k.status}`}>{k.status === "ok" ? "정상" : k.status === "expired" ? "인증 실패" : k.status === "unset" ? "미확인" : "오류"}</span> : <span className="muted">없음</span>}
+                        {k?.statusMessage && <div className="muted">{k.statusMessage}</div>}
+                      </td>
+                      <td className="muted">{k?.secretHint ?? "-"}</td>
+                      <td className="muted">{models ? `${models}개` : "-"}</td>
+                      <td>
+                        <form action={saveAiKey} style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          <input type="hidden" name="workspaceId" value={w.id} />
+                          <input type="hidden" name="provider" value={p.id} />
+                          <input name="api_key" type="password" autoComplete="off" placeholder={k ? "새 키로 교체" : "API 키"} required style={{ minWidth: 160, flex: 1 }} aria-label={`${p.name} API 키`} />
+                          {p.id === "muse" && (
+                            <input name="base_url" placeholder="API 주소" defaultValue={typeof k?.config.base_url === "string" ? k.config.base_url : ""} required style={{ minWidth: 160, flex: 1 }} aria-label="Muse API 주소" />
+                          )}
+                          <button>저장</button>
+                        </form>
+                      </td>
+                      <td>
+                        {k && (
+                          <div className="actions" style={{ marginTop: 0 }}>
+                            <form action={checkAiKey}><input type="hidden" name="workspaceId" value={w.id} /><input type="hidden" name="provider" value={p.id} /><button className="ghost">확인</button></form>
+                            <form action={deleteAiKey}><input type="hidden" name="workspaceId" value={w.id} /><input type="hidden" name="provider" value={p.id} /><button className="danger">삭제</button></form>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </details>
           <form action={saveAi}>
             <input type="hidden" name="workspaceId" value={w.id} />
             <div className="row">
@@ -99,7 +145,7 @@ export default async function AdminAiPage() {
               <div className="row" key={p.key}>
                 <div>
                   <label htmlFor={`${w.id}-${p.key}-m`}>{p.label} · 모델</label>
-                  <input id={`${w.id}-${p.key}-m`} name={`${p.key}.model`} list="models-all" defaultValue={settings?.models[p.key]?.model ?? ""} />
+                  <input id={`${w.id}-${p.key}-m`} name={`${p.key}.model`} list={`models-${w.id}`} defaultValue={settings?.models[p.key]?.model ?? ""} />
                 </div>
                 <div>
                   <label htmlFor={`${w.id}-${p.key}-e`}>노력</label>

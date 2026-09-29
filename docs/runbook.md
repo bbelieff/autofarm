@@ -24,6 +24,7 @@ docker compose ps && docker compose logs --tail 30 web worker
 ```bash
 git clone https://github.com/bbelieff/autofarm.git /opt/autofarm/prod
 cd /opt/autofarm/prod/deploy && umask 077 && cat > .env   # 아래 키 채우기
+# 교안 기준 프리셋(비공개): 운영자 PC 의 config/presets.private.json 을 서버 /opt/autofarm/prod/config/ 에 복사(없으면 docker 가 폴더를 만들어 실패)
 docker compose up -d --build
 tailscale serve --bg --https=8443 http://127.0.0.1:3320
 ```
