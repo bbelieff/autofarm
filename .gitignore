@@ -10,3 +10,6 @@ config/suppliers*.json
 *.log
 storage/
 .DS_Store
+.pgdata/
+*.tsbuildinfo
+coverage/
